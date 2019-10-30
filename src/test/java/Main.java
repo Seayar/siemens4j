@@ -1,30 +1,33 @@
 import tk.seayar.siemens4j.SiemensPLCS;
 import tk.seayar.siemens4j.SiemensS7Net;
-import tk.seayar.siemens4j.core.Types.OperateResult;
-import tk.seayar.siemens4j.core.Types.OperateResultExOne;
+import tk.seayar.siemens4j.core.types.OperateResult;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         SiemesTest();
     }
 
-    private static void SiemesTest(){
-        SiemensS7Net siemens_net = new SiemensS7Net(SiemensPLCS.S300,"192.168.2.190");
+    private static void SiemesTest() throws InterruptedException {
+        SiemensS7Net siemens_net = new SiemensS7Net(SiemensPLCS.S200, "172.18.4.3");
         OperateResult connect = siemens_net.ConnectServer();
-        if(connect.IsSuccess){
+        if (connect.IsSuccess) {
             System.out.println("connect success!");
-        }
-        else {
-            System.out.println("failed:"+connect.Message);
+        } else {
+            System.out.println("failed:" + connect.Message);
         }
 //        siemens_net.ConnectClose();
 
         // 上面是初始化
-        siemens_net.Write("DB1.0",(byte) 1);
+//        siemens_net.Write("DB1.0",(byte) 1);
 
-        System.out.println(siemens_net.ReadByte("Q100").Content);
+//        OperateResultExOne<byte[]> a = siemens_net.Read(new String[]{"C0", "V584"}, new short[]{2, 2});
+        System.out.println(siemens_net.ReadInt16("C0").Content);
+        System.out.println(siemens_net.ReadInt16("C2").Content);
+        System.out.println(siemens_net.ReadInt16("C7").Content);
+        System.out.println(siemens_net.ReadInt16("C6").Content);
 
+        /*
         byte m100_byte = siemens_net.ReadByte("M100").Content;
         short m100_short = siemens_net.ReadInt16("M100").Content;
         int m100_int = siemens_net.ReadInt32("M100").Content;
@@ -60,7 +63,7 @@ public class Main {
                 // 发生了异常
             }
         }
-
+*/
     }
 
 }

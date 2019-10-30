@@ -1,6 +1,6 @@
 package tk.seayar.siemens4j.basic;
 
-import tk.seayar.siemens4j.core.Thread.SimpleHybirdLock;
+import tk.seayar.siemens4j.core.thread.SimpleHybirdLock;
 
 /**
  * 一个简单的不持久化的序号自增类，采用线程安全实现，并允许指定最大数字，到达后清空从指定数开始

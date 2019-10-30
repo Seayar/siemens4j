@@ -1,6 +1,6 @@
 package tk.seayar.siemens4j.basic;
 
-import tk.seayar.siemens4j.core.Thread.SimpleHybirdLock;
+import tk.seayar.siemens4j.core.thread.SimpleHybirdLock;
 
 import java.lang.reflect.Array;
 

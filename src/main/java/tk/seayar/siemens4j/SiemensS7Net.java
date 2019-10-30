@@ -1,12 +1,12 @@
 package tk.seayar.siemens4j;
 
 import tk.seayar.siemens4j.basic.SoftBasic;
-import tk.seayar.siemens4j.core.IMessage.S7Message;
-import tk.seayar.siemens4j.core.Net.NetworkBase.NetworkDeviceBase;
-import tk.seayar.siemens4j.core.Transfer.ReverseBytesTransform;
-import tk.seayar.siemens4j.core.Types.OperateResult;
-import tk.seayar.siemens4j.core.Types.OperateResultExOne;
-import tk.seayar.siemens4j.core.Types.OperateResultExThree;
+import tk.seayar.siemens4j.core.imessage.S7Message;
+import tk.seayar.siemens4j.core.net.networkbase.NetworkDeviceBase;
+import tk.seayar.siemens4j.core.transfer.ReverseBytesTransform;
+import tk.seayar.siemens4j.core.types.OperateResult;
+import tk.seayar.siemens4j.core.types.OperateResultExOne;
+import tk.seayar.siemens4j.core.types.OperateResultExThree;
 import tk.seayar.siemens4j.message.MessageString;
 
 import java.io.ByteArrayOutputStream;
@@ -16,6 +16,8 @@ import java.util.Arrays;
 
 /**
  * 西门子的数据交互类，采用s7协议实现
+ *
+ * @author seayar
  */
 public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTransform> {
 
@@ -27,9 +29,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      */
     public SiemensS7Net(SiemensPLCS siemens) {
         super(S7Message.class, ReverseBytesTransform.class);
-
-        Initialization(siemens, ""
-        );
+        Initialization(siemens, "");
     }
 
 
@@ -298,12 +298,28 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
             int ll = 0;
             for (int ii = 21; ii < read.Content.length; ii++) {
                 if ((ii + 1) < read.Content.length) {
-                    if (read.Content[ii] == (byte) 0xFF &&
-                            read.Content[ii + 1] == 0x04) {
-                        // 有数据
-                        System.arraycopy(read.Content, ii + 4, buffer, ll, length[kk]);
-                        ii += length[kk] + 3;
-                        ll += length[kk];
+                    if (read.Content[ii] == (byte) 0xFF) {
+                        if (read.Content[ii + 1] == 0x04) {
+                            // 有数据，普通byte,word,dword
+                            System.arraycopy(read.Content, ii + 4, buffer, ll, length[kk]);
+                            ii += length[kk] + 3;
+                            ll += length[kk];
+                        } else if (read.Content[ii + 1] == 0x09) {
+                            //string类型(200的C区)
+                            byte[] resLengthByte = new byte[2];
+                            System.arraycopy(read.Content, ii + 2, resLengthByte, 0, 2);
+                            int resLength = (resLengthByte[0] & 0xff) << 8 | resLengthByte[1] & 0xff;
+                            if (length[kk] <= resLength) {
+                                //如果采集的长度小于返回的长度，则截取返回数据的低位给最终返回值
+                                System.arraycopy(read.Content, ii + 4 + resLength - length[kk], buffer, ll, length[kk]);
+                                ll += length[kk];
+                            } else {
+                                //大于返回的长度，则把所有的值放在返回值的低位
+                                System.arraycopy(read.Content, ii + 4 + resLength - length[kk], buffer, ll + length[kk] - resLength, resLength);
+                                ll += resLength;
+                            }
+                            ii += resLength + 3;
+                        }
                         kk++;
                     }
                 }
@@ -523,7 +539,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
             };
     private byte[] plcHead2_200 = new byte[]
             {
-                    0x03, 0x00, 0x00, 0x19, 0x02, (byte) 0xF0, (byte) 0x80, 0x32, 0x01, 0x00, 0x00, 0x00, 0x00,
+                    0x03, 0x00, 0x00, 0x19, 0x02, (byte) 0xF0, (byte) 0x80, 0x32, 0x01, 0x00, 0x00, (byte) 0xCC, (byte) 0xC1,
                     0x00, 0x08, 0x00, 0x00, (byte) 0xF0, 0x00, 0x00, 0x01, 0x00, 0x01, 0x03, (byte) 0xC0
             };
 
@@ -547,7 +563,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param address 字符串信息
      * @return 实际值
      */
-    public static int CalculateAddressStarted(String address) {
+    private static int CalculateAddressStarted(String address) {
         if (address.indexOf('.') < 0) {
             return Integer.parseInt(address) * 8;
         } else {
@@ -563,8 +579,8 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param address 数据地址
      * @return 解析出地址类型，起始地址，DB块的地址
      */
-    public static OperateResultExThree<Byte, Integer, Integer> AnalysisAddress(String address) {
-        OperateResultExThree<Byte, Integer, Integer> result = new OperateResultExThree<Byte, Integer, Integer>();
+    private OperateResultExThree<Byte, Integer, Integer> AnalysisAddress(String address) {
+        OperateResultExThree<Byte, Integer, Integer> result = new OperateResultExThree<>();
         try {
             result.Content3 = 0;
             if (address.charAt(0) == 'P') {
@@ -592,17 +608,27 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
                 result.Content1 = (byte) 0x86;
                 result.Content2 = CalculateAddressStarted(address.substring(1));
             } else if (address.charAt(0) == 'T') {
-                result.Content1 = 0x1D;
+                if (CurrentPlc == SiemensPLCS.S200) {
+                    result.Content1 = (byte) 0x1F;
+                } else {
+                    result.Content1 = (byte) 0x1D;
+                }
                 result.Content2 = CalculateAddressStarted(address.substring(1));
             } else if (address.charAt(0) == 'C') {
-                result.Content1 = 0x1C;
-                result.Content2 = CalculateAddressStarted(address.substring(1));
+                if (CurrentPlc == SiemensPLCS.S200) {
+                    result.Content1 = (byte) 0x1E;
+                    result.Content2 = CalculateAddressStarted(address.substring(1)) / 8;
+                    result.Content4 = (byte) 0x1E;
+                } else {
+                    result.Content1 = (byte) 0x1C;
+                    result.Content2 = CalculateAddressStarted(address.substring(1));
+                }
             } else if (address.charAt(0) == 'V') {
                 result.Content1 = (byte) 0x84;
                 result.Content3 = 1;
                 result.Content2 = CalculateAddressStarted(address.substring(1));
             } else {
-                return new OperateResultExThree<Byte, Integer, Integer>(MessageString.NotSupportedDataType());
+                return new OperateResultExThree<>(MessageString.NotSupportedDataType());
             }
         } catch (Exception ex) {
             result.Message = ex.getMessage();
@@ -621,7 +647,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param length  读取数据长度 -> Read Data length
      * @return 包含结果对象的报文 -> Message containing the result object
      */
-    public static OperateResultExOne<byte[]> BuildReadCommand(String address, short length) {
+    private OperateResultExOne<byte[]> BuildReadCommand(String address, short length) {
         OperateResultExThree<Byte, Integer, Integer> analysis = AnalysisAddress(address);
         if (!analysis.IsSuccess) return OperateResultExOne.<byte[]>CreateFailedResult(analysis);
 
@@ -699,11 +725,20 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
             _PLCCommand[20 + ii * 12] = 0x0A;
             // 语法标记，ANY
             _PLCCommand[21 + ii * 12] = 0x10;
-            // 按字为单位
-            _PLCCommand[22 + ii * 12] = 0x02;
-            // 访问数据的个数
-            _PLCCommand[23 + ii * 12] = (byte) (length[ii] / 256);
-            _PLCCommand[24 + ii * 12] = (byte) (length[ii] % 256);
+            // 按字为单位(如果Contents4不为0，代表类型读的是特殊类型（和区的类型有关）)
+            if (address[ii].Content4 != 0) {
+                _PLCCommand[22 + ii * 12] = address[ii].Content4;
+            } else {
+                _PLCCommand[22 + ii * 12] = 0x02;
+            }
+            // 访问数据的个数，(如果Contents4不为0，代表类型读的是特殊类型，长度为1)
+            if (address[ii].Content4 != 0) {
+                _PLCCommand[23 + ii * 12] = 0;
+                _PLCCommand[24 + ii * 12] = 1;
+            } else {
+                _PLCCommand[23 + ii * 12] = (byte) (length[ii] / 256);
+                _PLCCommand[24 + ii * 12] = (byte) (length[ii] % 256);
+            }
             // DB块编号，如果访问的是DB块的话
             _PLCCommand[25 + ii * 12] = (byte) (address[ii].Content3 / 256);
             _PLCCommand[26 + ii * 12] = (byte) (address[ii].Content3 % 256);
@@ -725,7 +760,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param address 起始地址
      * @return 指令
      */
-    public static OperateResultExOne<byte[]> BuildBitReadCommand(String address) {
+    private OperateResultExOne<byte[]> BuildBitReadCommand(String address) {
         byte[] _PLCCommand = new byte[31];
         // 报文头
         _PLCCommand[0] = 0x03;
@@ -793,7 +828,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param data    原始的字节数据 -> Raw byte data
      * @return 包含结果对象的报文 -> Message containing the result object
      */
-    public static OperateResultExOne<byte[]> BuildWriteByteCommand(String address, byte[] data) {
+    private OperateResultExOne<byte[]> BuildWriteByteCommand(String address, byte[] data) {
         if (data == null) data = new byte[0];
 
         OperateResultExThree<Byte, Integer, Integer> analysis = AnalysisAddress(address);
@@ -809,7 +844,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param data     数据
      * @return 指令
      */
-    public static OperateResultExOne<byte[]> BuildWriteByteCommand(OperateResultExThree<Byte, Integer, Integer> analysis, byte[] data) {
+    private OperateResultExOne<byte[]> BuildWriteByteCommand(OperateResultExThree<Byte, Integer, Integer> analysis, byte[] data) {
         if (data == null) data = new byte[0];
 
         byte[] _PLCCommand = new byte[35 + data.length];
@@ -879,7 +914,7 @@ public class SiemensS7Net extends NetworkDeviceBase<S7Message, ReverseBytesTrans
      * @param data    数据
      * @return 指令
      */
-    public static OperateResultExOne<byte[]> BuildWriteBitCommand(String address, boolean data) {
+    private OperateResultExOne<byte[]> BuildWriteBitCommand(String address, boolean data) {
         OperateResultExThree<Byte, Integer, Integer> analysis = AnalysisAddress(address);
         if (!analysis.IsSuccess) return OperateResultExOne.CreateFailedResult(analysis);
 

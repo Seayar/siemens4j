@@ -1,12 +1,12 @@
 package tk.seayar.siemens4j;
 
 import tk.seayar.siemens4j.basic.SoftBasic;
-import tk.seayar.siemens4j.core.IMessage.FetchWriteMessage;
-import tk.seayar.siemens4j.core.Net.NetworkBase.NetworkDeviceBase;
-import tk.seayar.siemens4j.core.Transfer.ReverseBytesTransform;
-import tk.seayar.siemens4j.core.Types.OperateResult;
-import tk.seayar.siemens4j.core.Types.OperateResultExOne;
-import tk.seayar.siemens4j.core.Types.OperateResultExThree;
+import tk.seayar.siemens4j.core.imessage.FetchWriteMessage;
+import tk.seayar.siemens4j.core.net.networkbase.NetworkDeviceBase;
+import tk.seayar.siemens4j.core.transfer.ReverseBytesTransform;
+import tk.seayar.siemens4j.core.types.OperateResult;
+import tk.seayar.siemens4j.core.types.OperateResultExOne;
+import tk.seayar.siemens4j.core.types.OperateResultExThree;
 import tk.seayar.siemens4j.message.MessageString;
 
 /**

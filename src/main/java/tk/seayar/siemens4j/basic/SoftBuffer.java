@@ -1,9 +1,9 @@
 package tk.seayar.siemens4j.basic;
 
-import tk.seayar.siemens4j.core.Thread.SimpleHybirdLock;
-import tk.seayar.siemens4j.core.Transfer.IByteTransform;
-import tk.seayar.siemens4j.core.Transfer.RegularByteTransform;
-import tk.seayar.siemens4j.core.Types.IDataTransfer;
+import tk.seayar.siemens4j.core.thread.SimpleHybirdLock;
+import tk.seayar.siemens4j.core.transfer.IByteTransform;
+import tk.seayar.siemens4j.core.transfer.RegularByteTransform;
+import tk.seayar.siemens4j.core.types.IDataTransfer;
 
 public class SoftBuffer {
     private int capacity = 10;                      // 缓存的容量
