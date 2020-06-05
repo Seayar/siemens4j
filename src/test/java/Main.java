@@ -1,6 +1,6 @@
-import tk.seayar.siemens4j.SiemensPLCS;
-import tk.seayar.siemens4j.SiemensS7Net;
-import tk.seayar.siemens4j.core.types.OperateResult;
+import xyz.seayar.siemens4j.SiemensPLCS;
+import xyz.seayar.siemens4j.SiemensS7Net;
+import xyz.seayar.siemens4j.core.types.OperateResult;
 
 public class Main {
 

@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>tk.seayar</groupId>
+    <groupId>xyz.seayar</groupId>
     <artifactId>siemens4j</artifactId>
     <version>1.1.0</version>
     <build>
@@ -25,11 +25,25 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>yanshan-maven</id>
+            <name>yanshan maven</name>
+            <url>https://nexus.yanshandianzi.com/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
     <distributionManagement>
         <repository>
-            <id>thirdparty</id>
-            <url>http://maven.seayar.tk/nexus/content/repositories/thirdparty/</url>
+            <id>releases</id>
+            <name>Releases</name>
+            <url>https://nexus.yanshandianzi.com/repository/maven-releases/</url>
         </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>Snapshot</name>
+            <url>https://nexus.yanshandianzi.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
     </distributionManagement>
     
 </project>
